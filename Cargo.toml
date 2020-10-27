@@ -12,3 +12,4 @@ futures = "*"
 colored = "*"
 bytemuck = "*"
 shaderc = { version = "0.6.2" }
+ndarray = {version = "*", features = []}
