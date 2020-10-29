@@ -1,6 +1,6 @@
-# Alkomp
+# alkomp
 
-Alkomp is a GPGPU library written in Rust for preforming compute operations. It's designed to work over [WebGPU](https://www.w3.org/community/gpu/), enabling compute code to work on DirectX, Vulkan, Metal, and eventually OpenCL and the browser.
+alkomp is a GPGPU library written in Rust for preforming compute operations. It's designed to work over [WebGPU](https://www.w3.org/community/gpu/), enabling compute code to work on DirectX, Vulkan, Metal, and eventually OpenCL and the browser.
 
 Currently, compute kernel codes, which run on GPU, are not natively written in Rust. [Shaderc](https://github.com/google/shaderc) is used to compile `GLSL` to `SPIR-V`.
 
@@ -11,6 +11,16 @@ Planned:
 - [ ] Integrate [rust-gpu](https://github.com/EmbarkStudios/rust-gpu) to write native computer shaders
 
 ## Get Started
+
+Create your project: `cargo new --bin "gpuproject"`
+
+Add to `cargo.toml`:
+```
+[dependencies]
+alkomp = {git = "https://github.com/RustyBamboo/alkomp", branch = "main"}
+```
+
+Modify `src/main.rs`.
 
 As an example, this code runs the [Collatz](https://en.wikipedia.org/wiki/Collatz_conjecture) sequence on the GPU.
 ```rust
