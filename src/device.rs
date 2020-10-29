@@ -259,8 +259,8 @@ pub struct GPUSetGroupLayout {
 /// This returns a `GPUSetGroupLayout` which is a HashMap with a key for a set,
 /// which contains a HashMap of Layout index and BindGroupLayoutEntry
 /// ```
-///     let args = vulkomp::ParamsBuilder::new()
-///         .param::<[i32]>(None)
+///     let args = alkomp::ParamsBuilder::new()
+///         .param::<&[i32]>(None)
 ///         .param::<f32>(None)
 ///         .build(Some(0));
 /// ```

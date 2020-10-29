@@ -1,9 +1,9 @@
 use ndarray as nd;
-use vulkomp;
+use alkomp;
 
 #[test]
 fn ndarray_to_device() {
-    let mut device = vulkomp::Device::new(0);
+    let mut device = alkomp::Device::new(0);
 
     let arr: nd::Array<f32, _> = nd::Array::ones((5, 2, 2));
 
@@ -41,14 +41,16 @@ fn ndarray_compute_device() {
         data[1] = dim[1];
     }";
 
-    let mut device = vulkomp::Device::new(0);
+    let mut device = alkomp::Device::new(0);
 
     let arr: nd::Array<f32, _> = nd::Array::ones((2, 3));
 
-    let size_gpu = device.to_device(arr.shape());
+    let s: Vec<u32> = arr.shape().iter().map(|x| *x as u32).collect();
+
+    let size_gpu = device.to_device(s.as_slice());
     let data_gpu = device.to_device(&arr.as_slice().unwrap());
 
-    let args = vulkomp::ParamsBuilder::new()
+    let args = alkomp::ParamsBuilder::new()
         .param(Some(&data_gpu))
         .param(Some(&size_gpu))
         .build(Some(0));
@@ -61,11 +63,11 @@ fn ndarray_compute_device() {
     let shape = futures::executor::block_on(device.get(&size_gpu)).unwrap();
     let data = futures::executor::block_on(device.get(&data_gpu)).unwrap();
 
-    let shape = &shape[..];
+    let _shape = &shape[0..shape.len() - 1];
     let data = &data[0..data.len() - 1];
 
-    let x = nd::ArrayView::from_shape(shape, data).unwrap();
+    let x = nd::ArrayView::from_shape(arr.shape(), data).unwrap();
 
-    println!("{:?}", x);
-    // assert!(x == arr.into_dyn());
+    let expected = nd::array![[2.0, 3.0, 1.0], [1.0, 1.0, 1.0]];
+    assert!(x == expected.into_dyn());
 }

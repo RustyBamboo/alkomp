@@ -1,5 +1,5 @@
 [package]
-name = "vulkomp"
+name = "alkomp"
 version = "0.1.0"
 authors = ["daniel"]
 edition = "2018"

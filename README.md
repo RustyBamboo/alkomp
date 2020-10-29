@@ -1,7 +1,21 @@
-use alkomp;
+# Alkomp
 
-#[test]
-fn compute_on_device() {
+Alkomp is a GPGPU library written in Rust for preforming compute operations. It's designed to work over [WebGPU](https://www.w3.org/community/gpu/), enabling compute code to work on DirectX, Vulkan, Metal, and eventually OpenCL and the browser.
+
+Currently, compute kernel codes, which run on GPU, are not natively written in Rust. [Shaderc](https://github.com/google/shaderc) is used to compile `GLSL` to `SPIR-V`.
+
+Planned:
+
+- [ ] Build a crate of common operations for GPU
+- [ ] Bindings for C and Python
+- [ ] Integrate [rust-gpu](https://github.com/EmbarkStudios/rust-gpu) to write native computer shaders
+
+## Get Started
+
+As an example, this code runs the [Collatz](https://en.wikipedia.org/wiki/Collatz_conjecture) sequence on the GPU.
+```rust
+use alkomp;
+fn main() {
     let code = "
     #version 450
     layout(local_size_x = 1) in;
@@ -47,3 +61,4 @@ fn compute_on_device() {
 
     assert_eq!(&[0, 1, 7, 2], &collatz[..]);
 }
+```
