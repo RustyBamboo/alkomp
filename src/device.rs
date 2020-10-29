@@ -5,22 +5,12 @@ use std::fmt;
 use std::marker::PhantomData;
 use wgpu::util::DeviceExt;
 
-pub fn query() -> bool {
-    println!("{}", "Query compatible devices".bold());
+pub fn query() -> Vec<DeviceInfo> {
     let instance = wgpu::Instance::new(wgpu::BackendBit::PRIMARY);
     let adapter = instance.enumerate_adapters(wgpu::BackendBit::PRIMARY);
-    let mut found = false;
-    for a in adapter {
-        // println!("{:?}", a.get_info());
-        let device_info = DeviceInfo { info: a.get_info() };
-        println!(
-            "\t- {}\t{}",
-            device_info.name().bright_white(),
-            device_info.backend().green()
-        );
-        found = true;
-    }
-    found
+
+    let devices: Vec<DeviceInfo> = adapter.map(|a| DeviceInfo { info: a.get_info() }).collect();
+    devices
 }
 
 pub struct Device {

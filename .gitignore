@@ -1,1 +1,4 @@
 /target
+**.so
+**.egg-info
+py/target
