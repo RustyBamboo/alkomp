@@ -1,10 +1,9 @@
-use colored::*;
 use futures::executor::block_on;
 use std::collections::HashMap;
-use std::fmt;
 use std::marker::PhantomData;
 use wgpu::util::DeviceExt;
 
+#[cfg(not(target_arch = "wasm32"))]
 pub fn query() -> Vec<DeviceInfo> {
     let instance = wgpu::Instance::new(wgpu::BackendBit::PRIMARY);
     let adapter = instance.enumerate_adapters(wgpu::BackendBit::PRIMARY);
@@ -13,10 +12,29 @@ pub fn query() -> Vec<DeviceInfo> {
     devices
 }
 
+pub fn load_shader(path: &str) -> Vec<u32> {
+    const MAGIC_NUMBER: u32 = 0x0723_0203;
+    let bytes = std::fs::read(path).unwrap();
+
+    let (_, words, _) = unsafe { bytes.align_to::<u32>() };
+    assert_eq!(
+        words[0], MAGIC_NUMBER,
+        "wrong magic word {:x}. Make sure you are using a binary SPIRV file.",
+        words[0]
+    );
+    Vec::from(words)
+}
+
+#[cfg(not(target_arch = "wasm32"))]
 pub struct Device {
     pub device: wgpu::Device,
     pub queue: wgpu::Queue,
     pub info: Option<DeviceInfo>,
+}
+#[cfg(target_arch = "wasm32")]
+pub struct Device {
+    pub device: wgpu::Device,
+    pub queue: wgpu::Queue,
 }
 
 pub struct GPUData<T: ?Sized> {
@@ -27,6 +45,7 @@ pub struct GPUData<T: ?Sized> {
 }
 
 impl Device {
+    #[cfg(not(target_arch = "wasm32"))]
     pub fn new(device_index: usize) -> Self {
         let instance = wgpu::Instance::new(wgpu::BackendBit::PRIMARY);
         let mut adapter = instance.enumerate_adapters(wgpu::BackendBit::PRIMARY);
@@ -43,13 +62,6 @@ impl Device {
         let info = adapter.get_info().clone();
         let info = DeviceInfo { info };
 
-        println!(
-            "{} {}\t{}",
-            "Selected:".on_purple(),
-            info.name(),
-            info.backend().green()
-        );
-
         Device {
             device,
             queue,
@@ -57,34 +69,87 @@ impl Device {
         }
     }
 
+    #[cfg(target_arch = "wasm32")]
+    pub async fn new() -> Self {
+        let instance = wgpu::Instance::new(wgpu::BackendBit::PRIMARY);
+        let adapter = instance
+            .request_adapter(&wgpu::RequestAdapterOptions::default())
+            .await
+            .unwrap();
+        let (device, queue) = adapter
+            .request_device(
+                &wgpu::DeviceDescriptor {
+                    // features: wgpu::Features::MAPPABLE_PRIMARY_BUFFERS,
+                    features: wgpu::Features::empty(),
+                    limits: wgpu::Limits::default(),
+                    shader_validation: false,
+                },
+                None,
+            )
+            .await
+            .unwrap();
+
+        Device { device, queue }
+    }
+
     pub fn to_device<T: bytemuck::Pod>(&mut self, data: &[T]) -> GPUData<[T]> {
         let bytes = bytemuck::cast_slice(data);
 
-        let staging_buffer = self
-            .device
-            .create_buffer_init(&wgpu::util::BufferInitDescriptor {
-                label: Some("Staging Buffer"),
-                contents: &bytes,
-                usage: wgpu::BufferUsage::MAP_READ
+        // On native we can share memory between CPU and GPU... but not in web
+        let staging_buffer = if cfg!(not(target_arch = "wasm32")) {
+            self.device
+                .create_buffer_init(&wgpu::util::BufferInitDescriptor {
+                    label: Some("Staging Buffer"),
+                    contents: &bytes,
+                    usage: wgpu::BufferUsage::MAP_READ
+                        | wgpu::BufferUsage::COPY_DST
+                        | wgpu::BufferUsage::COPY_SRC,
+                })
+        } else {
+            self.device.create_buffer(&wgpu::BufferDescriptor {
+                label: None,
+                size: bytes.len() as u64,
+                usage: wgpu::BufferUsage::MAP_READ | wgpu::BufferUsage::COPY_DST,
+                mapped_at_creation: false,
+            })
+        };
+
+        let storage_buffer = if cfg!(not(target_arch = "wasm32")) {
+            self.device.create_buffer(&wgpu::BufferDescriptor {
+                label: None,
+                size: bytes.len() as u64,
+                usage: wgpu::BufferUsage::STORAGE
                     | wgpu::BufferUsage::COPY_DST
                     | wgpu::BufferUsage::COPY_SRC,
-            });
+                mapped_at_creation: false,
+            })
+        } else {
+            // Preload the buffer with data if we are on web
+            self.device
+                .create_buffer_init(&wgpu::util::BufferInitDescriptor {
+                    label: Some("Storage Buffer"),
+                    contents: &bytes,
+                    usage: wgpu::BufferUsage::STORAGE
+                        | wgpu::BufferUsage::COPY_DST
+                        | wgpu::BufferUsage::COPY_SRC,
+                })
+        };
 
-        let storage_buffer = self.device.create_buffer(&wgpu::BufferDescriptor {
-            label: None,
-            size: bytes.len() as u64,
-            usage: wgpu::BufferUsage::STORAGE
-                | wgpu::BufferUsage::COPY_DST
-                | wgpu::BufferUsage::COPY_SRC,
-            mapped_at_creation: false,
-        });
+        #[cfg(not(target_arch = "wasm32"))]
+        {
+            let mut encoder = self
+                .device
+                .create_command_encoder(&wgpu::CommandEncoderDescriptor { label: None });
+            encoder.copy_buffer_to_buffer(
+                &staging_buffer,
+                0,
+                &storage_buffer,
+                0,
+                bytes.len() as u64,
+            );
 
-        let mut encoder = self
-            .device
-            .create_command_encoder(&wgpu::CommandEncoderDescriptor { label: None });
-        encoder.copy_buffer_to_buffer(&staging_buffer, 0, &storage_buffer, 0, bytes.len() as u64);
-
-        self.queue.submit(Some(encoder.finish()));
+            self.queue.submit(Some(encoder.finish()));
+        }
 
         GPUData {
             staging_buffer,
@@ -294,7 +359,7 @@ impl<'a> ParamsBuilder<'a> {
                 new_binding_layout_idx,
                 wgpu::BindGroupEntry {
                     binding: new_binding_layout_idx,
-                    resource: wgpu::BindingResource::Buffer(gpu.storage_buffer.slice(0..)),
+                    resource: gpu.storage_buffer.as_entire_binding(),
                 },
             );
         }
@@ -322,10 +387,12 @@ impl<'a> ParamsBuilder<'a> {
     }
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 pub struct DeviceInfo {
     pub info: wgpu::AdapterInfo,
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 impl DeviceInfo {
     pub fn name(&self) -> String {
         self.info.name.clone()
@@ -350,9 +417,9 @@ impl DeviceInfo {
         self.info.device
     }
 }
-
-impl fmt::Debug for DeviceInfo {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+#[cfg(not(target_arch = "wasm32"))]
+impl std::fmt::Debug for DeviceInfo {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(
             f,
             "{{ name: {:?}, vendor_id: {:?}, device_id: {:?}, device_type: {:?} }}",
