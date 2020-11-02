@@ -16,3 +16,4 @@ ndarray = "*"
 pyo3 = {version = "*", features = ["extension-module"]}
 alkomp = {path = "../"}
 futures = "*"
+bytemuck = "*"

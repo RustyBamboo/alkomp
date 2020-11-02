@@ -38,9 +38,9 @@ fn compute_on_device() {
         .param(Some(&data_gpu))
         .build(Some(0));
 
-    let compute = device.compile("main", code, args.0).unwrap();
+    let compute = device.compile("main", code, &args.0).unwrap();
 
-    device.call(compute, (arr.len() as u32, 1, 1), args.1);
+    device.call(compute, (arr.len() as u32, 1, 1), &args.1);
 
     let collatz = futures::executor::block_on(device.get(&data_gpu)).unwrap();
     let collatz = &collatz[0..collatz.len() - 1];

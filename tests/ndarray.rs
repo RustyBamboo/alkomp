@@ -1,5 +1,5 @@
-use ndarray as nd;
 use alkomp;
+use ndarray as nd;
 
 #[test]
 fn ndarray_to_device() {
@@ -55,10 +55,9 @@ fn ndarray_compute_device() {
         .param(Some(&size_gpu))
         .build(Some(0));
 
-    let compute = device.compile("main", code, args.0).unwrap();
+    let compute = device.compile("main", code, &args.0).unwrap();
 
-    device.call(compute, (1, 1, 1), args.1);
-
+    device.call(compute, (1, 1, 1), &args.1);
 
     let shape = futures::executor::block_on(device.get(&size_gpu)).unwrap();
     let data = futures::executor::block_on(device.get(&data_gpu)).unwrap();

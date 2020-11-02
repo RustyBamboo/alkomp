@@ -125,13 +125,13 @@ impl Device {
         &self,
         entry: &str,
         code: &str,
-        params: GPUSetGroupLayout,
+        params: &GPUSetGroupLayout,
     ) -> Result<GPUCompute, ()> {
         let mut bind_group_layouts: HashMap<u32, wgpu::BindGroupLayout> = HashMap::new();
         let mut param_types = HashMap::new();
 
-        for (set_id, set) in params.set_bind_group_layouts {
-            for (binding_num, binding) in &set {
+        for (set_id, set) in &params.set_bind_group_layouts {
+            for (binding_num, binding) in set {
                 if !param_types.contains_key(&set_id) {
                     param_types.insert(set_id, HashMap::new());
                 }
@@ -141,7 +141,7 @@ impl Device {
                     .insert(*binding_num, binding.1.clone());
             }
             bind_group_layouts.insert(
-                set_id,
+                *set_id,
                 self.device
                     .create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
                         label: None,
@@ -157,7 +157,7 @@ impl Device {
         use super::glslhelper;
         let mut spirv = glslhelper::GLSLCompile::new(&code);
 
-        let bin = spirv.compile().unwrap();
+        let bin = spirv.compile(entry).unwrap();
 
         let cs_module = self
             .device
@@ -198,7 +198,7 @@ impl Device {
         &mut self,
         gpu_compute: GPUCompute,
         workspace: (u32, u32, u32),
-        args: HashMap<u32, wgpu::BindGroupEntry<'a>>,
+        args: &HashMap<u32, wgpu::BindGroupEntry<'a>>,
     ) {
         let mut encoder = self
             .device

@@ -87,20 +87,24 @@ As an example, we do the same computation as above but with python:
 import alkompy
 import numpy as np
 
-arr = np.array(range(1,100), dtype=np.float32)
+arr = np.array(range(1,5), dtype=np.uint32)
 
+# Retrieve a GPU device
 dev = alkompy.Device(0)
-dev.to_device(arr)
 
+# Send data to a GPU
+data_gpu = dev.to_device(arr)
+
+# GLSL code to compile
 code = """
     #version 450
     layout(local_size_x = 1) in;
     
     layout(set = 0, binding = 0) buffer PrimeIndices {
-        float[] indices;
+        uint[] indices;
     };
 
-    uint collatz_iterations(float n) {
+    uint collatz_iterations(uint n) {
         uint i = 0;
         while(n != 1) {
             if (mod(n, 2) == 0) {
@@ -116,10 +120,12 @@ code = """
     
     void main() {
         uint index = gl_GlobalInvocationID.x;
-        indices[index] = collatz_iterations(float(indices[index]));
+        indices[index] = collatz_iterations(indices[index]);
     }"""
 
-out = dev.run("main", code, (len(arr), 1, 1))
+# Compile and run the code, and specifying the order of the layout
+dev.run("main", code, (len(arr), 1, 1), [data_gpu])
 
-print(out[0])
+result = dev.get(data_gpu)
+assert((result == np.array([0, 1, 7, 2])).all())
 ```

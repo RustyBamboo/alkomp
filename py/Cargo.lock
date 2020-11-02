@@ -709,8 +709,6 @@ dependencies = [
 [[package]]
 name = "numpy"
 version = "0.12.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "38adbba10b6b4c3c5c3537ef686cd6bc9968c9b5cacc1db4edb2f457256e5300"
 dependencies = [
  "cfg-if 0.1.10",
  "libc",
@@ -854,6 +852,7 @@ name = "py"
 version = "0.1.0"
 dependencies = [
  "alkomp",
+ "bytemuck",
  "futures",
  "ndarray",
  "numpy",

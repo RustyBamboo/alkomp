@@ -10,14 +10,14 @@ impl GLSLCompile {
             compiler: shaderc::Compiler::new().unwrap(),
         }
     }
-    pub fn compile(&mut self) -> Result<Vec<u32>, ()> {
+    pub fn compile(&mut self, entry: &str) -> Result<Vec<u32>, ()> {
         let bin = self
             .compiler
             .compile_into_spirv(
                 &self.code,
                 shaderc::ShaderKind::Compute,
                 "name",
-                "name",
+                entry,
                 None,
             )
             .unwrap();
