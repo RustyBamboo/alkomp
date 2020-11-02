@@ -6,7 +6,7 @@ edition = "2018"
 license-file = "LICENSE"
 
 [dependencies]
-wgpu = "0.6"
+wgpu = { git = "https://github.com/gfx-rs/wgpu-rs" }
 futures = "*"
 colored = "*"
 bytemuck = "*"

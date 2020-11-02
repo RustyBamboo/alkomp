@@ -4,7 +4,7 @@
 
 --------------------------------------------------------------------
 
-alkomp is a GPGPU library written in Rust for performing compute operations. It's designed to work over [WebGPU](https://www.w3.org/community/gpu/), enabling compute code to work on DirectX, Vulkan, Metal, and eventually OpenCL and the browser.
+A GPGPU library written in Rust for performing compute operations. It's designed to work over [WebGPU](https://www.w3.org/community/gpu/), enabling compute code to work on DirectX, Vulkan, Metal, and eventually OpenCL and the browser.
 
 Python bindings work around `numpy` arrays, with an example provided below.
 
