@@ -124,7 +124,7 @@ impl Device {
     pub fn compile(
         &self,
         entry: &str,
-        code: &str,
+        shader: &Vec<u32>,
         params: &GPUSetGroupLayout,
     ) -> Result<GPUCompute, ()> {
         let mut bind_group_layouts: HashMap<u32, wgpu::BindGroupLayout> = HashMap::new();
@@ -154,15 +154,10 @@ impl Device {
             );
         }
 
-        use super::glslhelper;
-        let mut spirv = glslhelper::GLSLCompile::new(&code);
-
-        let bin = spirv.compile(entry).unwrap();
-
         let cs_module = self
             .device
             .create_shader_module(wgpu::ShaderModuleSource::SpirV(std::borrow::Cow::Borrowed(
-                &bin,
+                shader,
             )));
 
         let pipeline_layout = self

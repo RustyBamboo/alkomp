@@ -14,6 +14,6 @@ crate-type = ["cdylib"]
 numpy = "*"
 ndarray = "*"
 pyo3 = {version = "*", features = ["extension-module"]}
-alkomp = {path = "../"}
+alkomp = {path = "../", features = ["shaderc"]}
 futures = "*"
 bytemuck = "*"

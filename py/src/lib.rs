@@ -2,18 +2,6 @@ use numpy::{DataType, PyArray, PyArrayDescr, PyArrayDyn};
 use pyo3::prelude::*;
 use std::convert::From;
 
-// trait Number: Element {}
-
-// impl<T> Number for T where T: Any + Element {}
-
-// #[derive(Clone)]
-// struct Number;
-
-// impl <T> Element for Number {
-//     const DATA_TYPE: DataType = T;
-//     fn is_same_type(_ : &PyArrayDescr) -> bool { todo!() }
-// }
-
 #[pyclass]
 struct Device {
     device: alkomp::Device,
@@ -69,7 +57,7 @@ impl Device {
     fn run<'py>(
         &mut self,
         entry: String,
-        code: String,
+        shader: Vec<u32>,
         workspace: (u32, u32, u32),
         layers: Vec<&PyCell<GPUDataNumpy>>,
     ) {
@@ -89,7 +77,7 @@ impl Device {
 
         let compute = self
             .device
-            .compile(entry.as_str(), code.as_str(), &args.0)
+            .compile(entry.as_str(), &shader, &args.0)
             .unwrap();
 
         self.device.call(compute, workspace, &args.1);
@@ -150,6 +138,13 @@ fn alkompy(_py: Python<'_>, m: &PyModule) -> PyResult<()> {
             .map(|x| (x.name(), x.backend().to_string()))
             .collect();
         Ok(res)
+    }
+
+    #[pyfn(m, "compile_glsl")]
+    fn compile_glsl<'py>(_py: Python<'_>, code: String) -> PyResult<Vec<u32>> {
+        let mut spirv = alkomp::glslhelper::GLSLCompile::new(code.as_str());
+        let shader = spirv.compile("main").unwrap();
+        Ok(shader)
     }
 
     Ok(())

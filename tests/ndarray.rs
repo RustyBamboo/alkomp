@@ -21,6 +21,7 @@ fn ndarray_to_device() {
     assert!(x == arr.into_dyn());
 }
 
+#[cfg(feature = "shaderc")]
 #[test]
 fn ndarray_compute_device() {
     let code = "
@@ -40,6 +41,8 @@ fn ndarray_compute_device() {
         data[0] = dim[0];
         data[1] = dim[1];
     }";
+    let mut spirv = alkomp::glslhelper::GLSLCompile::new(&code);
+    let shader = spirv.compile("main").unwrap();
 
     let mut device = alkomp::Device::new(0);
 
@@ -55,7 +58,7 @@ fn ndarray_compute_device() {
         .param(Some(&size_gpu))
         .build(Some(0));
 
-    let compute = device.compile("main", code, &args.0).unwrap();
+    let compute = device.compile("main", &shader, &args.0).unwrap();
 
     device.call(compute, (1, 1, 1), &args.1);
 

@@ -39,8 +39,10 @@ code = """
         indices[index] = collatz_iterations(indices[index]);
     }"""
 
-# Compile and run the code, and specifying the order of the layout
-dev.run("main", code, (len(arr), 1, 1), [data_gpu])
+shader = alkompy.compile_glsl(code)
+
+# Run the shader and specifying the order of the bindings
+dev.run("main", shader, (len(arr), 1, 1), [data_gpu])
 
 result = dev.get(data_gpu)
 assert((result == np.array([0, 1, 7, 2])).all())

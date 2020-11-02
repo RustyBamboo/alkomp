@@ -1,5 +1,5 @@
 use alkomp;
-
+#[cfg(feature = "shaderc")]
 #[test]
 fn compute_on_device() {
     let code = "
@@ -29,6 +29,9 @@ fn compute_on_device() {
         indices[index] = collatz_iterations(indices[index]);
     }";
 
+    let mut spirv = alkomp::glslhelper::GLSLCompile::new(&code);
+    let shader = spirv.compile("main").unwrap();
+
     let arr: Vec<u32> = vec![1, 2, 3, 4];
 
     let mut device = alkomp::Device::new(0);
@@ -38,7 +41,7 @@ fn compute_on_device() {
         .param(Some(&data_gpu))
         .build(Some(0));
 
-    let compute = device.compile("main", code, &args.0).unwrap();
+    let compute = device.compile("main", &shader, &args.0).unwrap();
 
     device.call(compute, (arr.len() as u32, 1, 1), &args.1);
 

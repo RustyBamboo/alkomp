@@ -9,7 +9,7 @@ test_requires = install_requires + ['pytest']
 setup(
     name='alkompy',
     version='0.1.0',
-    description='Example of python-extension using rust-numpy',
+    description='Build alkompy',
     rust_extensions=[RustExtension(
         'alkompy',
         './Cargo.toml',
