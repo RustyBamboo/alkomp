@@ -27,57 +27,60 @@ As an example, this code runs the [Collatz](https://en.wikipedia.org/wiki/Collat
 use alkomp;
 fn main() {
     let code = "
-    #version 450
-    layout(local_size_x = 1) in;
-    
-    layout(set = 0, binding = 0) buffer PrimeIndices {
-        uint[] indices;
-    };
+        #version 450
+        layout(local_size_x = 1) in;
 
-    uint collatz_iterations(uint n) {
-        uint i = 0;
-        while(n != 1) {
-            if (mod(n, 2) == 0) {
-                n = n / 2;
+        layout(set = 0, binding = 0) buffer PrimeIndices {
+            uint[] indices;
+        };
+
+        uint collatz_iterations(uint n) {
+            uint i = 0;
+            while(n != 1) {
+                if (mod(n, 2) == 0) {
+                    n = n / 2;
+                }
+                else {
+                    n = (3 * n) + 1;
+                }
+                i++;
             }
-            else {
-                n = (3 * n) + 1;
-            }
-            i++;
+            return i;
         }
-        return i;
-    }
-    
-    void main() {
-        uint index = gl_GlobalInvocationID.x;
-        indices[index] = collatz_iterations(indices[index]);
-    }";
 
-    let arr: Vec<u32> = vec![1, 2, 3, 4];
+        void main() {
+            uint index = gl_GlobalInvocationID.x;
+            indices[index] = collatz_iterations(indices[index]);
+        }";
 
-    let mut device = alkomp::Device::new(0);
-    let data_gpu = device.to_device(arr.as_slice());
+        let mut spirv = alkomp::glslhelper::GLSLCompile::new(&code);
+        let shader = spirv.compile("main").unwrap();
 
-    let args = alkomp::ParamsBuilder::new()
-        .param(Some(&data_gpu))
-        .build(Some(0));
+        let arr: Vec<u32> = vec![1, 2, 3, 4];
 
-    let compute = device.compile("main", code, args.0).unwrap();
+        let mut device = alkomp::Device::new(0);
+        let data_gpu = device.to_device(arr.as_slice());
 
-    device.call(compute, (arr.len() as u32, 1, 1), args.1);
+        let args = alkomp::ParamsBuilder::new()
+            .param(Some(&data_gpu))
+            .build(Some(0));
 
-    let collatz = futures::executor::block_on(device.get(&data_gpu)).unwrap();
-    let collatz = &collatz[0..collatz.len() - 1];
+        let compute = device.compile("main", &shader, &args.0).unwrap();
 
-    assert_eq!(&[0, 1, 7, 2], &collatz[..]);
+        device.call(compute, (arr.len() as u32, 1, 1), &args.1);
+
+        let collatz = futures::executor::block_on(device.get(&data_gpu)).unwrap();
+        let collatz = &collatz[0..collatz.len() - 1];
+
+        assert_eq!(&[0, 1, 7, 2], &collatz[..]);
 }
 ```
 
 ## Python Wrappers (with numpy)
 
-In addition to writing Rust code, it is also possible to write Python code which interfaces with `alkomp`. At this time, the Python interface is designed to specifically work with `numpy ndarrays`. This means you can quickly send a numpy array to a GPU with `device.to_device(my_np_array)` and get a numpy array back after running `device.call(...)`. The shape and the data of an array are handled internally in the wrapper and are sent in layers: `Arr1[layer 0 = data, layer 1 = shape], Arr2[layer 2 = data, layer 3 = shape], ...`.
+In addition to writing Rust code, it is also possible to write Python code which interfaces with `alkomp`. At this time, the Python interface is designed to specifically work with `numpy ndarrays`. This means you can quickly send a numpy array to a GPU with `data_gpu = device.to_device(my_np_array)` and run a computation using `device.call(...)`. `to_device` returns an object that records the memory location of a GPU buffer, as well shape and type. In order to retrieve the contents of the buffer: `device.get(data_gpu)`. `get` function returns a numpy in the same shape as `my_np_array`.
 
-To set how to setup read [this](py/README.md).
+To build the python library read [this](py/README.md).
 
 As an example, we do the same computation as above but with python:
 
@@ -123,8 +126,10 @@ code = """
         indices[index] = collatz_iterations(indices[index]);
     }"""
 
-# Compile and run the code, and specifying the order of the layout
-dev.run("main", code, (len(arr), 1, 1), [data_gpu])
+shader = alkompy.compile_glsl(code)
+
+# Run the shader and specifying the order of the bindings
+dev.run("main", shader, (len(arr), 1, 1), [data_gpu])
 
 result = dev.get(data_gpu)
 assert((result == np.array([0, 1, 7, 2])).all())
