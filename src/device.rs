@@ -116,6 +116,8 @@ impl Device {
                 .chunks_exact(std::mem::size_of::<T>())
                 .map(|b| bytemuck::from_bytes::<T>(b).clone())
                 .collect();
+            drop(data);
+            gpu.staging_buffer.unmap();
             return Some(result);
         }
         None
