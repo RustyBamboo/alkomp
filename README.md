@@ -1,16 +1,14 @@
-# alkomp
+<p align="center">
+  <img width="25%" src="https://github.com/RustyBamboo/alkomp/raw/main/docs/alkomp-logo.png">
+</p>
+
+--------------------------------------------------------------------
 
 alkomp is a GPGPU library written in Rust for performing compute operations. It's designed to work over [WebGPU](https://www.w3.org/community/gpu/), enabling compute code to work on DirectX, Vulkan, Metal, and eventually OpenCL and the browser.
 
-Currently, compute kernel codes, which run on GPU, are not natively written in Rust. [Shaderc](https://github.com/google/shaderc) is used to compile `GLSL` to `SPIR-V`.
+Python bindings work around `numpy` arrays, with an example provided below.
 
-Planned:
-
-- [ ] Build a crate of common operations for GPU
-- [X] Bindings for Python
-- [ ] Integrate [rust-gpu](https://github.com/EmbarkStudios/rust-gpu) to write native computer shaders
-
-## Get Started
+### Example
 
 Create your project: `cargo new --bin gpuproject`
 
@@ -76,7 +74,7 @@ fn main() {
 }
 ```
 
-## Python Wrappers (with numpy)
+### Python Wrappers (with numpy)
 
 In addition to writing Rust code, it is also possible to write Python code which interfaces with `alkomp`. At this time, the Python interface is designed to specifically work with `numpy ndarrays`. This means you can quickly send a numpy array to a GPU with `data_gpu = device.to_device(my_np_array)` and run a computation using `device.call(...)`. `to_device` returns an object that records the memory location of a GPU buffer, as well shape and type. In order to retrieve the contents of the buffer: `device.get(data_gpu)`. `get` function returns a numpy in the same shape as `my_np_array`.
 
@@ -134,3 +132,11 @@ dev.run("main", shader, (len(arr), 1, 1), [data_gpu])
 result = dev.get(data_gpu)
 assert((result == np.array([0, 1, 7, 2])).all())
 ```
+
+### TODO
+
+- [ ] Build a crate of common operations for GPU
+- [X] Bindings for Python
+- [ ] Integrate [rust-gpu](https://github.com/EmbarkStudios/rust-gpu) to write native computer shaders
+
+Currently, compute kernel codes, which run on GPU, are not natively written in Rust. [Shaderc](https://github.com/google/shaderc) is used to compile `GLSL` to `SPIR-V`.

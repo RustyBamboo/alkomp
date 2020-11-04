@@ -3,6 +3,7 @@ name = "alkomp"
 version = "0.1.0"
 authors = ["RustyBamboo <d@volya.xyz>"]
 edition = "2018"
+license-file = "LICENSE"
 
 [dependencies]
 wgpu = "0.6"
