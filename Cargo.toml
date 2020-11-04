@@ -4,11 +4,13 @@ version = "0.1.0"
 authors = ["RustyBamboo <d@volya.xyz>"]
 edition = "2018"
 license-file = "LICENSE"
+description = "A compute library written in Rust with WebGPU"
+exclude = ["docs/alkomp-logo.png"]
 
 [dependencies]
 wgpu = "0.6"
-futures = "*"
-colored = "*"
-bytemuck = "*"
+futures = "0.3.7"
+colored = "2.0.0"
+bytemuck = "1.4.1"
 shaderc = { version = "0.6.2", optional = true}
-ndarray = {version = "*", features = []}
+ndarray = {version = "0.13.1", features = []}
