@@ -1,6 +1,6 @@
 [package]
 name = "py"
-version = "0.1.0"
+version = "0.2.0"
 authors = ["RustyBamboo <d@volya.xyz>"]
 edition = "2018"
 
@@ -14,6 +14,6 @@ crate-type = ["cdylib"]
 numpy = "*"
 ndarray = "*"
 pyo3 = {version = "*", features = ["extension-module"]}
-alkomp = {path = "../", features = ["shaderc"]}
+alkomp = {git = "https://github.com/RustyBamboo/alkomp", branch="main", features = ["shaderc"]}
 futures = "*"
 bytemuck = "*"

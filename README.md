@@ -4,23 +4,58 @@
 
 --------------------------------------------------------------------
 
-A GPGPU library written in Rust for performing compute operations. It's designed to work over [WebGPU](https://www.w3.org/community/gpu/), enabling compute code to work on DirectX, Vulkan, Metal, and eventually OpenCL and the browser.
+![crates.io](https://img.shields.io/crates/v/alkomp) ![pypi.org](https://img.shields.io/pypi/v/alkompy?color=blue)
+
+A GPGPU library written in Rust for performing compute operations on native hardware or on the web. It's designed to work over [WebGPU](https://www.w3.org/community/gpu/), enabling compute code to work on DirectX, Vulkan, Metal, and eventually OpenCL and the browser.
 
 Python bindings work around `numpy` arrays, with an example provided below.
 
-### Example
+## Installation
 
-Create your project: `cargo new --bin gpuproject`
+### Packaged
 
-Add to `cargo.toml`:
+Rust (`Cargo.toml`):
 ```
-[dependencies]
-alkomp = {git = "https://github.com/RustyBamboo/alkomp", branch = "main"}
+alkomp = {version = "*", features = "shaderc"}
 ```
 
-Modify `src/main.rs`.
+Python:
+```
+pip3 install alkompy
+```
 
-As an example, this code runs the [Collatz](https://en.wikipedia.org/wiki/Collatz_conjecture) sequence on the GPU.
+### Latest
+
+*straight from the faucet*
+
+Rust (`Cargo.toml`)
+```
+alkomp = {git = "https://github.com/RustyBamboo/Alkomp", branch = "main", features = "shaderc"}
+```
+
+Python
+```
+git clone https://github.com/RustyBamboo/Alkomp
+cd py
+pip3 install -r requirements-dev.txt
+python3 setup.py install --user
+python3 test/test.py
+```
+
+## Examples
+
+In this example, we run the [Collatz](https://en.wikipedia.org/wiki/Collatz_conjecture) sequence on the GPU.
+
+### Rust
+
+```
+cargo new --bin collatz
+cd collatz
+echo 'alkomp = {git = "https://github.com/RustyBamboo/Alkomp", branch = "main", features = "shaderc"}' >> Cargo.toml
+echo 'futures = "*"' >> Cargo.toml
+```
+
+`src/main.rs`
 ```rust
 use alkomp;
 fn main() {
@@ -74,14 +109,13 @@ fn main() {
 }
 ```
 
-### Python Wrappers (with numpy)
+### Python
 
-In addition to writing Rust code, it is also possible to write Python code which interfaces with `alkomp`. At this time, the Python interface is designed to specifically work with `numpy ndarrays`. This means you can quickly send a numpy array to a GPU with `data_gpu = device.to_device(my_np_array)` and run a computation using `device.call(...)`. `to_device` returns an object that records the memory location of a GPU buffer, as well shape and type. In order to retrieve the contents of the buffer: `device.get(data_gpu)`. `get` function returns a numpy in the same shape as `my_np_array`.
+```
+touch collatz.py
+```
 
-To build the python library read [this](py/README.md).
-
-As an example, we do the same computation as above but with python:
-
+`collatz.py`
 ```python
 #!python3
 
@@ -131,6 +165,10 @@ dev.run("main", shader, (len(arr), 1, 1), [data_gpu])
 
 result = dev.get(data_gpu)
 assert((result == np.array([0, 1, 7, 2])).all())
+```
+
+```
+python3 collatz.py
 ```
 
 ### TODO
