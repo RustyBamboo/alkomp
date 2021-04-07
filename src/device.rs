@@ -54,7 +54,7 @@ impl Device {
             &wgpu::DeviceDescriptor {
                 features: wgpu::Features::MAPPABLE_PRIMARY_BUFFERS,
                 limits: wgpu::Limits::default(),
-                shader_validation: false,
+                label: None,
             },
             None,
         ))
@@ -191,7 +191,7 @@ impl Device {
     pub fn compile(
         &self,
         entry: &str,
-        shader: &Vec<u32>,
+        shader: &wgpu::ShaderModuleDescriptor,
         params: &GPUSetGroupLayout,
     ) -> Result<GPUCompute, ()> {
         let mut bind_group_layouts: HashMap<u32, wgpu::BindGroupLayout> = HashMap::new();
@@ -221,11 +221,7 @@ impl Device {
             );
         }
 
-        let cs_module = self
-            .device
-            .create_shader_module(wgpu::ShaderModuleSource::SpirV(std::borrow::Cow::Borrowed(
-                shader,
-            )));
+        let cs_module = self.device.create_shader_module(shader);
 
         let pipeline_layout = self
             .device
@@ -243,10 +239,8 @@ impl Device {
             .create_compute_pipeline(&wgpu::ComputePipelineDescriptor {
                 label: None,
                 layout: Some(&pipeline_layout),
-                compute_stage: wgpu::ProgrammableStageDescriptor {
-                    module: &cs_module,
-                    entry_point: entry,
-                },
+                module: &cs_module,
+                entry_point: entry,
             });
 
         Ok(GPUCompute {
@@ -282,7 +276,8 @@ impl Device {
         );
         // }
         {
-            let mut cpass = encoder.begin_compute_pass();
+            let mut cpass =
+                encoder.begin_compute_pass(&wgpu::ComputePassDescriptor { label: None });
             cpass.set_pipeline(&gpu_compute.compute_pipeline);
 
             for (set_num, _bind_group) in gpu_compute.bind_group_layouts {
@@ -342,9 +337,9 @@ impl<'a> ParamsBuilder<'a> {
                 wgpu::BindGroupLayoutEntry {
                     binding: new_binding_layout_idx,
                     visibility: wgpu::ShaderStage::COMPUTE,
-                    ty: wgpu::BindingType::StorageBuffer {
-                        dynamic: false,
-                        readonly: false,
+                    ty: wgpu::BindingType::Buffer {
+                        ty: wgpu::BufferBindingType::Storage { read_only: false },
+                        has_dynamic_offset: false,
                         min_binding_size: None,
                     },
                     count: None,
