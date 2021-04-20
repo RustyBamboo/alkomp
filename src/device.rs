@@ -134,21 +134,21 @@ impl Device {
                 })
         };
 
-        #[cfg(not(target_arch = "wasm32"))]
-        {
-            let mut encoder = self
-                .device
-                .create_command_encoder(&wgpu::CommandEncoderDescriptor { label: None });
-            encoder.copy_buffer_to_buffer(
-                &staging_buffer,
-                0,
-                &storage_buffer,
-                0,
-                bytes.len() as u64,
-            );
-
-            self.queue.submit(Some(encoder.finish()));
-        }
+//        #[cfg(not(target_arch = "wasm32"))]
+//        {
+//            let mut encoder = self
+//                .device
+//                .create_command_encoder(&wgpu::CommandEncoderDescriptor { label: None });
+//            encoder.copy_buffer_to_buffer(
+//                &staging_buffer,
+//                0,
+//                &storage_buffer,
+//                0,
+//                bytes.len() as u64,
+//            );
+//
+//            self.queue.submit(Some(encoder.finish()));
+//        }
 
         GPUData {
             staging_buffer,
