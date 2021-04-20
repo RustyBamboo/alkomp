@@ -52,7 +52,8 @@ impl Device {
         let adapter = adapter.nth(device_index).unwrap();
         let (device, queue) = block_on(adapter.request_device(
             &wgpu::DeviceDescriptor {
-                features: wgpu::Features::MAPPABLE_PRIMARY_BUFFERS,
+                //features: wgpu::Features::MAPPABLE_PRIMARY_BUFFERS,
+                features: wgpu::Features::empty(),
                 limits: wgpu::Limits::default(),
                 label: None,
             },
@@ -97,14 +98,12 @@ impl Device {
 
         // On native we can share memory between CPU and GPU... but not in web
         let staging_buffer = if cfg!(not(target_arch = "wasm32")) {
-            self.device
-                .create_buffer_init(&wgpu::util::BufferInitDescriptor {
-                    label: Some("Staging Buffer"),
-                    contents: &bytes,
-                    usage: wgpu::BufferUsage::MAP_READ
-                        | wgpu::BufferUsage::COPY_DST
-                        | wgpu::BufferUsage::COPY_SRC,
-                })
+            self.device.create_buffer(&wgpu::BufferDescriptor {
+                label: None,
+                size: bytes.len() as u64,
+                usage: wgpu::BufferUsage::MAP_READ | wgpu::BufferUsage::COPY_DST,
+                mapped_at_creation: false,
+            })
         } else {
             self.device.create_buffer(&wgpu::BufferDescriptor {
                 label: None,
@@ -115,14 +114,14 @@ impl Device {
         };
 
         let storage_buffer = if cfg!(not(target_arch = "wasm32")) {
-            self.device.create_buffer(&wgpu::BufferDescriptor {
-                label: None,
-                size: bytes.len() as u64,
-                usage: wgpu::BufferUsage::STORAGE
-                    | wgpu::BufferUsage::COPY_DST
-                    | wgpu::BufferUsage::COPY_SRC,
-                mapped_at_creation: false,
-            })
+            self.device
+                .create_buffer_init(&wgpu::util::BufferInitDescriptor {
+                    label: Some("Storage Buffer"),
+                    contents: &bytes,
+                    usage: wgpu::BufferUsage::STORAGE
+                        | wgpu::BufferUsage::COPY_DST
+                        | wgpu::BufferUsage::COPY_SRC,
+                })
         } else {
             // Preload the buffer with data if we are on web
             self.device
